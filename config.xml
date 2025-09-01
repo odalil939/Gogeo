@@ -1,0 +1,7 @@
+<config>
+    <dbname>postgres</dbname>
+    <host>localhost</host>
+    <port>5432</port>
+    <user>postgres</user>
+    <password>1</password>
+</config>
