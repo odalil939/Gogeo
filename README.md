@@ -1,8 +1,8 @@
 # Gogeo - High-Performance GIS Spatial Analysis Library for Go
 
-[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.18-blue.svg)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.20-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![GDAL](https://img.shields.io/badge/GDAL-%3E%3D%203.0-orange.svg)](https://gdal.org/)
+[![GDAL](https://img.shields.io/badge/GDAL-%3E%3D%203.11-orange.svg)](https://gdal.org/)
 
 Gogeo is a high-performance Go GIS spatial analysis library built on GDAL/OGR, designed for large-scale geospatial data processing. It provides comprehensive spatial analysis capabilities through parallel computing, tile-based processing, and precision control.
 
