@@ -147,7 +147,7 @@ func SpatialEraseAnalysis(inputLayer, eraseLayer *GDALLayer, config *ParallelGeo
 	defer eraseLayer.Close()
 
 	// 为输入图层添加唯一标识字段（用于后续融合）
-	err := addUniqueIdentifierFieldForErase(inputLayer, inputLayer.layer)
+	err := addUniqueIdentifierFieldForErase(inputLayer, inputLayer.GetLayerName())
 	if err != nil {
 		return nil, fmt.Errorf("添加唯一标识字段失败: %v", err)
 	}
