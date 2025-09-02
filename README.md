@@ -1,39 +1,46 @@
-# Gogeo - 高性能Go语言GIS空间分析库
+# Gogeo - High-Performance GIS Spatial Analysis Library for Go
 
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.18-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GDAL](https://img.shields.io/badge/GDAL-%3E%3D%203.0-orange.svg)](https://gdal.org/)
 
-Gogeo是一个基于GDAL/OGR的高性能Go语言GIS空间分析库，专为大规模地理数据处理而设计。通过并行计算、瓦片分块和精度控制等技术，提供了完整的空间分析功能集。
+Gogeo is a high-performance Go GIS spatial analysis library built on GDAL/OGR, designed for large-scale geospatial data processing. It provides comprehensive spatial analysis capabilities through parallel computing, tile-based processing, and precision control.
 
-## ✨ 主要特性
+## ✨ Key Features
 
-### 🚀 高性能并行计算
-- **瓦片分块处理**：自动将大数据集分割为小块并行处理
-- **多线程工作池**：可配置的并发工作线程数
-- **内存优化**：智能的内存管理和资源清理机制
-- **进度监控**：实时进度回调和用户取消支持
+### 🚀 High-Performance Parallel Computing
+- **Tile-based Processing**: Automatically splits large datasets into tiles for parallel processing
+- **Multi-threaded Worker Pool**: Configurable concurrent worker threads
+- **Memory Optimization**: Smart memory management and resource cleanup
+- **Progress Monitoring**: Real-time progress callbacks and user cancellation support
 
-### 🎯 完整的空间分析功能
-- **Clip（裁剪）**：用一个图层裁剪另一个图层
-- **Erase（擦除）**：从输入图层中移除重叠部分
-- **Identity（叠加）**：保留输入要素并添加重叠属性
-- **Intersect（相交）**：计算两个图层的交集
-- **SymDifference（对称差）**：计算两个图层的对称差集
-- **Union（联合）**：计算两个图层的并集
-- **Update（更新）**：用一个图层更新另一个图层
+### 🎯 Complete Spatial Analysis Operations
+- **Clip**: Clip one layer with another layer
+- **Erase**: Remove overlapping parts from input layer
+- **Identity**: Preserve input features and add overlapping attributes
+- **Intersect**: Calculate intersection of two layers
+- **SymDifference**: Calculate symmetric difference of two layers
+- **Union**: Calculate union of two layers
+- **Update**: Update one layer with another layer
 
-### 🔧 高级功能
-- **几何精度控制**：可配置的几何精度网格
-- **字段管理**：智能的字段映射和冲突处理
-- **数据格式支持**：支持Shapefile、GeoJSON、PostGIS等多种格式
-- **空间索引**：自动空间索引优化查询性能
-- **边界处理**：智能的边界要素去重机制
+### 📁 Comprehensive Data I/O Support
+- **PostGIS Database**: Read from and write to PostGIS databases
+- **Shapefile**: Support for ESRI Shapefile format
+- **File Geodatabase**: Support for ESRI File Geodatabase (.gdb)
+- **Format Conversion**: Convert between different geospatial formats
+- **Layer Management**: List layers, get layer information, and metadata
 
-## 📦 安装
+### 🔧 Advanced Features
+- **Geometry Precision Control**: Configurable geometry precision grid
+- **Field Management**: Smart field mapping and conflict resolution
+- **Spatial Indexing**: Automatic spatial index optimization for query performance
+- **Boundary Processing**: Intelligent boundary feature deduplication
+- **Resource Management**: Automatic cleanup with finalizers
 
-### 前置条件
-确保系统已安装GDAL开发库：
+## 📦 Installation
+
+### Prerequisites
+Ensure GDAL development libraries are installed on your system:
 
 **Ubuntu/Debian:**
 ```bash
@@ -52,16 +59,16 @@ brew install gdal
 ```
 
 **Windows:**
-下载并安装 [OSGeo4W](https://trac.osgeo.org/osgeo4w/) 或 [GDAL Windows binaries](https://www.gisinternals.com/)
+Download and install [OSGeo4W](https://trac.osgeo.org/osgeo4w/) or [GDAL Windows binaries](https://www.gisinternals.com/)
 
-### 安装Gogeo
+### Install Gogeo
 ```bash
 go get github.com/yourusername/gogeo
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 基本用法示例
+### Basic Usage Example
 
 ```go
 package main
@@ -73,157 +80,198 @@ import (
 )
 
 func main() {
-    // 初始化GDAL
+    // Initialize GDAL
     gogeo.RegisterAllDrivers()
     defer gogeo.Cleanup()
 
-    // 读取输入数据
-    inputLayer, err := gogeo.OpenLayer("input.shp", 0)
+    // Read input data from Shapefile
+    inputLayer, err := gogeo.ReadShapeFileLayer("input.shp")
     if err != nil {
-        log.Fatal("打开输入图层失败:", err)
+        log.Fatal("Failed to open input layer:", err)
     }
     defer inputLayer.Close()
 
-    clipLayer, err := gogeo.OpenLayer("clip.shp", 0)
+    clipLayer, err := gogeo.ReadShapeFileLayer("clip.shp")
     if err != nil {
-        log.Fatal("打开裁剪图层失败:", err)
+        log.Fatal("Failed to open clip layer:", err)
     }
     defer clipLayer.Close()
 
-    // 配置并行处理参数
+    // Configure parallel processing parameters
     config := &gogeo.ParallelGeosConfig{
-        MaxWorkers: 8,           // 8个并发线程
-        TileCount:  4,           // 4x4瓦片分块
-        IsMergeTile: true,       // 启用结果融合
+        MaxWorkers: 8,           // 8 concurrent threads
+        TileCount:  4,           // 4x4 tile grid
+        IsMergeTile: true,       // Enable result merging
         PrecisionConfig: &gogeo.GeometryPrecisionConfig{
             Enabled:   true,
-            GridSize:  0.001,    // 1mm精度
+            GridSize:  0.001,    // 1mm precision
         },
         ProgressCallback: func(progress float64, message string) bool {
-            fmt.Printf("进度: %.1f%% - %s\n", progress*100, message)
-            return true // 返回false可取消操作
+            fmt.Printf("Progress: %.1f%% - %s\n", progress*100, message)
+            return true // Return false to cancel operation
         },
     }
 
-    // 执行空间裁剪分析
+    // Execute spatial clip analysis
     result, err := gogeo.SpatialClipAnalysis(inputLayer, clipLayer, config)
     if err != nil {
-        log.Fatal("空间分析失败:", err)
+        log.Fatal("Spatial analysis failed:", err)
     }
     defer result.OutputLayer.Close()
 
-    // 保存结果
-    err = gogeo.SaveLayer(result.OutputLayer, "output.shp", "ESRI Shapefile")
+    // Save result to Shapefile
+    err = gogeo.WriteShapeFileLayer(result.OutputLayer, "output.shp", "result", true)
     if err != nil {
-        log.Fatal("保存结果失败:", err)
+        log.Fatal("Failed to save result:", err)
     }
 
-    fmt.Printf("分析完成！生成了 %d 个要素\n", result.ResultCount)
+    fmt.Printf("Analysis completed! Generated %d features\n", result.ResultCount)
 }
 ```
 
-### 高级配置示例
+### PostGIS Database Example
 
 ```go
-// 自定义精度配置
-precisionConfig := &gogeo.GeometryPrecisionConfig{
-    Enabled:              true,
-    GridSize:             0.0001,  // 0.1mm精度
-    PreserveCollinear:    true,    // 保留共线点
-    KeepCollapsed:        false,   // 移除退化几何
+// Configure PostGIS connection
+config := &gogeo.PostGISConfig{
+    Host:     "localhost",
+    Port:     "5432",
+    Database: "gis_db",
+    User:     "postgres",
+    Password: "password",
+    Schema:   "public",
+    Table:    "land_use",
 }
 
-// 高性能配置
-config := &gogeo.ParallelGeosConfig{
-    MaxWorkers:      16,           // 16线程并行
-    TileCount:       8,            // 8x8=64个瓦片
-    IsMergeTile:     true,
-    PrecisionConfig: precisionConfig,
-    ProgressCallback: customProgressHandler,
+// Create PostGIS reader
+reader := gogeo.NewPostGISReader(config)
+layer, err := reader.ReadGeometryTable()
+if err != nil {
+    log.Fatal("Failed to read PostGIS table:", err)
 }
+defer layer.Close()
 
-// 执行不同类型的空间分析
-clipResult, _ := gogeo.SpatialClipAnalysis(layer1, layer2, config)
-eraseResult, _ := gogeo.SpatialEraseAnalysis(layer1, layer2, config)
-identityResult, _ := gogeo.SpatialIdentityAnalysis(layer1, layer2, config)
-intersectResult, _ := gogeo.SpatialIntersectAnalysis(layer1, layer2, config)
-unionResult, _ := gogeo.SpatialUnionAnalysis(layer1, layer2, config)
-symDiffResult, _ := gogeo.SpatialSymDifferenceAnalysis(layer1, layer2, config)
-updateResult, _ := gogeo.SpatialUpdateAnalysis(layer1, layer2, config)
+// Print layer information
+layer.PrintLayerInfo()
 ```
 
-## 📚 API文档
-
-### 核心数据结构
+### File Format Conversion Example
 
 ```go
-// 并行处理配置
+// Convert Shapefile to File Geodatabase
+err := gogeo.ConvertFile(
+    "input.shp",           // Source file
+    "output.gdb",          // Target file
+    "",                    // Source layer name (empty for first layer)
+    "converted_layer",     // Target layer name
+    true,                  // Overwrite if exists
+)
+if err != nil {
+    log.Fatal("Conversion failed:", err)
+}
+```
+
+## 📚 API Documentation
+
+### Core Data Structures
+
+```go
+// Parallel processing configuration
 type ParallelGeosConfig struct {
-    MaxWorkers       int                        // 最大工作线程数
-    TileCount        int                        // 瓦片分块数量(N×N)
-    IsMergeTile      bool                       // 是否融合瓦片结果
-    PrecisionConfig  *GeometryPrecisionConfig   // 几何精度配置
-    ProgressCallback ProgressCallback           // 进度回调函数
+    MaxWorkers       int                        // Maximum worker threads
+    TileCount        int                        // Tile count (N×N grid)
+    IsMergeTile      bool                       // Whether to merge tile results
+    PrecisionConfig  *GeometryPrecisionConfig   // Geometry precision configuration
+    ProgressCallback ProgressCallback           // Progress callback function
 }
 
-// 几何精度配置
+// Geometry precision configuration
 type GeometryPrecisionConfig struct {
-    Enabled           bool    // 是否启用精度控制
-    GridSize          float64 // 精度网格大小
-    PreserveCollinear bool    // 保留共线点
-    KeepCollapsed     bool    // 保留退化几何
+    Enabled           bool    // Enable precision control
+    GridSize          float64 // Precision grid size
+    PreserveCollinear bool    // Preserve collinear points
+    KeepCollapsed     bool    // Keep collapsed geometries
 }
 
-// 分析结果
+// Analysis result
 type GeosAnalysisResult struct {
-    OutputLayer *GDALLayer // 输出图层
-    ResultCount int        // 结果要素数量
+    OutputLayer *GDALLayer // Output layer
+    ResultCount int        // Number of result features
+}
+
+// PostGIS connection configuration
+type PostGISConfig struct {
+    Host     string // Database host
+    Port     string // Database port
+    Database string // Database name
+    User     string // Username
+    Password string // Password
+    Schema   string // Schema name
+    Table    string // Table name
 }
 ```
 
-### 主要函数
+### Spatial Analysis Functions
 
-#### 空间分析函数
 ```go
-// 空间裁剪
+// Spatial clip
 func SpatialClipAnalysis(inputLayer, clipLayer *GDALLayer, config *ParallelGeosConfig) (*GeosAnalysisResult, error)
 
-// 空间擦除
+// Spatial erase
 func SpatialEraseAnalysis(inputLayer, eraseLayer *GDALLayer, config *ParallelGeosConfig) (*GeosAnalysisResult, error)
 
-// 空间叠加
+// Spatial identity
 func SpatialIdentityAnalysis(inputLayer, methodLayer *GDALLayer, config *ParallelGeosConfig) (*GeosAnalysisResult, error)
 
-// 空间相交
+// Spatial intersect
 func SpatialIntersectAnalysis(inputLayer, intersectLayer *GDALLayer, config *ParallelGeosConfig) (*GeosAnalysisResult, error)
 
-// 空间联合
+// Spatial union
 func SpatialUnionAnalysis(inputLayer, unionLayer *GDALLayer, config *ParallelGeosConfig) (*GeosAnalysisResult, error)
 
-// 对称差集
+// Symmetric difference
 func SpatialSymDifferenceAnalysis(inputLayer, diffLayer *GDALLayer, config *ParallelGeosConfig) (*GeosAnalysisResult, error)
 
-// 空间更新
+// Spatial update
 func SpatialUpdateAnalysis(inputLayer, updateLayer *GDALLayer, config *ParallelGeosConfig) (*GeosAnalysisResult, error)
 ```
 
-#### 数据I/O函数
+### Data I/O Functions
+
 ```go
-// 打开图层
-func OpenLayer(filename string, layerIndex int) (*GDALLayer, error)
+// Read functions
+func ReadShapeFileLayer(filePath string, layerName ...string) (*GDALLayer, error)
+func ReadGDBLayer(filePath string, layerName ...string) (*GDALLayer, error)
+func ReadGeospatialFile(filePath string, layerName ...string) (*GDALLayer, error)
 
-// 保存图层
-func SaveLayer(layer *GDALLayer, filename string, driverName string) error
+// Write functions
+func WriteShapeFileLayer(sourceLayer *GDALLayer, filePath string, layerName string, overwrite bool) error
+func WriteGDBLayer(sourceLayer *GDALLayer, filePath string, layerName string, overwrite bool) error
+func WriteGeospatialFile(sourceLayer *GDALLayer, filePath string, layerName string, overwrite bool) error
 
-// 创建图层
-func CreateLayer(filename string, driverName string, geomType OGRwkbGeometryType, srs *OGRSpatialReference) (*GDALLayer, error)
+// Utility functions
+func ConvertFile(sourceFilePath, targetFilePath, sourceLayerName, targetLayerName string, overwrite bool) error
+func CopyLayerToFile(sourceLayer *GDALLayer, targetFilePath, targetLayerName string, overwrite bool) error
 ```
 
-## 🎯 使用场景
+### PostGIS Functions
 
-### 1. 大规模土地利用分析
 ```go
-// 处理省级土地利用数据与行政边界的叠加分析
+// Create PostGIS reader
+func NewPostGISReader(config *PostGISConfig) *PostGISReader
+
+// Read geometry table
+func (r *PostGISReader) ReadGeometryTable() (*GDALLayer, error)
+
+// Convenience function
+func MakePGReader(table string) *PostGISReader
+```
+
+## 🎯 Use Cases
+
+### 1. Large-Scale Land Use Analysis
+```go
+// Process provincial land use data with administrative boundaries
 landUseResult, err := gogeo.SpatialIdentityAnalysis(landUseLayer, adminBoundaryLayer, &gogeo.ParallelGeosConfig{
     MaxWorkers:  12,
     TileCount:   6,
@@ -231,139 +279,168 @@ landUseResult, err := gogeo.SpatialIdentityAnalysis(landUseLayer, adminBoundaryL
 })
 ```
 
-### 2. 环境影响评估
+### 2. Environmental Impact Assessment
 ```go
-// 计算项目影响区域与保护区的交集
+// Calculate intersection of project impact area with protected areas
 impactResult, err := gogeo.SpatialIntersectAnalysis(projectAreaLayer, protectedAreaLayer, config)
 ```
 
-### 3. 城市规划分析
+### 3. Urban Planning Analysis
 ```go
-// 从建设用地中擦除生态保护区
+// Erase ecological protection areas from construction land
 buildableResult, err := gogeo.SpatialEraseAnalysis(constructionLayer, ecologyLayer, config)
 ```
 
-## ⚡ 性能优化
-
-### 1. 并行配置建议
+### 4. Data Format Migration
 ```go
-// CPU密集型任务
+// Migrate Shapefile data to PostGIS
+sourceLayer, _ := gogeo.ReadShapeFileLayer("data.shp")
+// Process and save to PostGIS (implementation depends on your PostGIS writer)
+```
+
+## ⚡ Performance Optimization
+
+### 1. Parallel Configuration Recommendations
+```go
+// CPU-intensive tasks
 config.MaxWorkers = runtime.NumCPU()
 
-// I/O密集型任务  
+// I/O-intensive tasks  
 config.MaxWorkers = runtime.NumCPU() * 2
 
-// 大数据集处理
-config.TileCount = 8  // 64个瓦片
+// Large dataset processing
+config.TileCount = 8  // 64 tiles
 ```
 
-### 2. 内存优化
+### 2. Memory Optimization
 ```go
-// 启用结果融合以减少内存占用
+// Enable result merging to reduce memory usage
 config.IsMergeTile = true
 
-// 适当的精度设置避免过度计算
-config.PrecisionConfig.GridSize = 0.001  // 1mm精度通常足够
+// Appropriate precision settings to avoid over-computation
+config.PrecisionConfig.GridSize = 0.001  // 1mm precision is usually sufficient
 ```
 
-### 3. 数据预处理
-- 建议在分析前对数据建立空间索引
-- 移除无效几何体
-- 统一坐标参考系统
+### 3. Data Preprocessing
+- Build spatial indexes on data before analysis
+- Remove invalid geometries
+- Ensure consistent coordinate reference systems
 
-## 🔧 配置参数详解
+## 🔧 Configuration Parameters
 
-### MaxWorkers（工作线程数）
-- **推荐值**：CPU核心数的1-2倍
-- **影响**：过多会导致上下文切换开销，过少无法充分利用CPU
+### MaxWorkers (Worker Thread Count)
+- **Recommended**: 1-2 times CPU core count
+- **Impact**: Too many causes context switching overhead, too few underutilizes CPU
 
-### TileCount（瓦片数量）
-- **推荐值**：4-8（生成16-64个瓦片）
-- **影响**：瓦片过多会增加边界处理开销，过少无法有效并行
+### TileCount (Tile Count)
+- **Recommended**: 4-8 (generates 16-64 tiles)
+- **Impact**: Too many tiles increase boundary processing overhead, too few reduce parallelism
 
-### GridSize（精度网格）
-- **推荐值**：0.001-0.0001（1mm-0.1mm）
-- **影响**：过大会丢失细节，过小会增加计算开销
+### GridSize (Precision Grid)
+- **Recommended**: 0.001-0.0001 (1mm-0.1mm)
+- **Impact**: Too large loses detail, too small increases computation overhead
 
-## 🐛 故障排除
+## 🐛 Troubleshooting
 
-### 常见问题
+### Common Issues
 
-1. **GDAL库未找到**
+1. **GDAL Library Not Found**
    ```
-   错误：cannot find GDAL library
-   解决：确保GDAL开发库已正确安装并设置环境变量
-   ```
-
-2. **内存不足**
-   ```
-   错误：out of memory
-   解决：减少MaxWorkers或增加TileCount进行更细粒度分块
+   Error: cannot find GDAL library
+   Solution: Ensure GDAL development libraries are properly installed and environment variables are set
    ```
 
-3. **几何错误**
+2. **Out of Memory**
    ```
-   错误：invalid geometry
-   解决：启用精度控制或预处理数据移除无效几何
+   Error: out of memory
+   Solution: Reduce MaxWorkers or increase TileCount for finer granularity
    ```
 
-### 调试技巧
+3. **Invalid Geometry**
+   ```
+   Error: invalid geometry
+   Solution: Enable precision control or preprocess data to remove invalid geometries
+   ```
+
+4. **PostGIS Connection Failed**
+   ```
+   Error: connection failed
+   Solution: Check database connection parameters and ensure PostgreSQL/PostGIS is running
+   ```
+
+### Debugging Tips
 ```go
-// 启用详细日志
+// Enable verbose logging
 config.ProgressCallback = func(progress float64, message string) bool {
     log.Printf("Progress: %.2f%% - %s", progress*100, message)
     return true
 }
 
-// 检查数据有效性
+// Check data validity
 if layer.GetFeatureCount() == 0 {
-    log.Println("警告：图层为空")
+    log.Println("Warning: Layer is empty")
 }
+
+// Print layer information
+layer.PrintLayerInfo()
 ```
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-我们欢迎各种形式的贡献！
+We welcome contributions of all kinds!
 
-### 如何贡献
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+### How to Contribute
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### 开发环境设置
+### Development Environment Setup
 ```bash
-# 克隆仓库
+# Clone repository
 git clone https://github.com/yourusername/gogeo.git
 cd gogeo
 
-# 安装依赖
+# Install dependencies
 go mod tidy
 
-# 运行测试
+# Run tests
 go test ./...
 
-# 构建示例
+# Build examples
 go build ./examples/...
 ```
 
-## 📄 许可证
+### Code Style
+- Follow Go conventions and best practices
+- Add comprehensive tests for new features
+- Update documentation for API changes
+- Ensure proper resource cleanup
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+## 📄 License
 
-## 🙏 致谢
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-- [GDAL/OGR](https://gdal.org/) - 强大的地理空间数据处理库
-- [GEOS](https://trac.osgeo.org/geos/) - 几何计算引擎
-- Go社区的所有贡献者
+## 🙏 Acknowledgments
 
-## 📞 联系方式
+- [GDAL/OGR](https://gdal.org/) - Powerful geospatial data processing library
+- [GEOS](https://trac.osgeo.org/geos/) - Geometry computation engine
+- [PostGIS](https://postgis.net/) - Spatial database extension for PostgreSQL
+- All contributors to the Go community
 
-- 项目主页：https://github.com/yourusername/gogeo
-- 问题反馈：https://github.com/yourusername/gogeo/issues
-- 邮箱：your.email@example.com
+## 📞 Contact
+
+- Project Homepage: https://github.com/yourusername/gogeo
+- Issue Tracker: https://github.com/yourusername/gogeo/issues
+- Email: 1131698384@qq.com
+
+## 🔗 Related Projects
+
+- [GDAL Go Bindings](https://github.com/lukeroth/gdal) - Alternative GDAL bindings for Go
+- [PostGIS](https://postgis.net/) - Spatial database extension
+- [GEOS](https://trac.osgeo.org/geos/) - Geometry engine
 
 ---
 
-⭐ 如果这个项目对你有帮助，请给我们一个星标！
+⭐ If this project helps you, please give us a star!
