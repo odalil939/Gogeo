@@ -390,22 +390,6 @@ defer layer.Close()
 layer.PrintLayerInfo()
 ```
 
-### File Format Conversion Example
-
-```go
-// Convert Shapefile to File Geodatabase
-err := gogeo.ConvertFile(
-    "input.shp",           // Source file
-    "output.gdb",          // Target file
-    "",                    // Source layer name (empty for first layer)
-    "converted_layer",     // Target layer name
-    true,                  // Overwrite if exists
-)
-if err != nil {
-    log.Fatal("Conversion failed:", err)
-}
-```
-
 ## 📚 API Documentation
 
 ### Core Data Structures
