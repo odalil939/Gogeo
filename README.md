@@ -63,7 +63,7 @@ Download and install [OSGeo4W](https://trac.osgeo.org/osgeo4w/) or [GDAL Windows
 
 ### Install Gogeo
 ```bash
-go get github.com/yourusername/gogeo
+go get github.com/fmecool/Gogeo
 ```
 
 ## 🚀 Quick Start
