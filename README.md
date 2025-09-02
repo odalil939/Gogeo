@@ -1,7 +1,7 @@
 # Gogeo - High-Performance GIS Spatial Analysis Library for Go
 
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.20-blue.svg)](https://golang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![GDAL](https://img.shields.io/badge/GDAL-%3E%3D%203.11-orange.svg)](https://gdal.org/)
 
 Gogeo is a high-performance Go GIS spatial analysis library built on GDAL/OGR, designed for large-scale geospatial data processing. It provides comprehensive spatial analysis capabilities through parallel computing, tile-based processing, and precision control.
@@ -420,7 +420,25 @@ go build ./examples/...
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU Affero General Public License v3.0** - see the [LICENSE](LICENSE) file for details.
+
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
+### What this means:
+- ✅ **Free for open source projects**: You can use, modify, and distribute this code in open source projects
+- ✅ **Educational and research use**: Free for academic and research purposes
+- ❌ **No proprietary/commercial use**: You cannot use this code in closed-source commercial products
+- 📋 **Share improvements**: Any modifications must be shared under the same license
+- 🌐 **Network services**: If you run this as a web service, you must provide the source code
+
+### Commercial Licensing
+For commercial use or if you need a different license, please contact us at: your.email@example.com
+
+We offer flexible commercial licenses for businesses that want to use Gogeo in proprietary applications.
+
+### Full License Text
+The complete AGPL-3.0 license text is available at: https://www.gnu.org/licenses/agpl-3.0.html
+
 
 ## 🙏 Acknowledgments
 
