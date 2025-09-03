@@ -583,7 +583,9 @@ func (w *FileGeoWriter) WriteShapeFile(sourceLayer *GDALLayer, layerName string)
 
 	// 初始化GDAL
 	InitializeGDAL()
-
+	// 设置Shapefile编码为GBK/GB2312（中文Windows系统）
+	C.CPLSetConfigOption(C.CString("SHAPE_ENCODING"), C.CString("GBK"))
+	defer C.CPLSetConfigOption(C.CString("SHAPE_ENCODING"), nil)
 	// 如果需要覆盖，先删除已存在的文件
 	if w.Overwrite {
 		w.removeShapeFiles()
@@ -752,11 +754,12 @@ func (w *FileGeoWriter) copyFieldDefinitions(sourceDefn C.OGRFeatureDefnH, targe
 	return nil
 }
 
-// copyFeatures 复制要素
+// copyFeatures 复制要素（跳过错误要素）
 func (w *FileGeoWriter) copyFeatures(sourceLayer *GDALLayer, targetLayer C.OGRLayerH) error {
 	sourceLayer.ResetReading()
-
 	targetDefn := C.OGR_L_GetLayerDefn(targetLayer)
+
+	var totalFeatures, successCount, errorCount int
 
 	for {
 		sourceFeature := sourceLayer.GetNextFeature()
@@ -764,56 +767,108 @@ func (w *FileGeoWriter) copyFeatures(sourceLayer *GDALLayer, targetLayer C.OGRLa
 			break
 		}
 
-		// 创建新要素
-		newFeature := C.OGR_F_Create(targetDefn)
-		if newFeature == nil {
-			C.OGR_F_Destroy(sourceFeature)
-			return fmt.Errorf("无法创建新要素")
-		}
+		totalFeatures++
 
-		// 复制几何
-		geometry := C.OGR_F_GetGeometryRef(sourceFeature)
-		if geometry != nil {
-			// 克隆几何
-			clonedGeom := C.OGR_G_Clone(geometry)
-			if clonedGeom != nil {
-				C.OGR_F_SetGeometry(newFeature, clonedGeom)
-				C.OGR_G_DestroyGeometry(clonedGeom)
+		// 使用recover机制捕获panic
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("要素 %d 处理时发生panic，跳过: %v\n", totalFeatures, r)
+					errorCount++
+				}
+				// 确保源要素被释放
+				C.OGR_F_Destroy(sourceFeature)
+			}()
+
+			// 尝试复制要素
+			if err := w.copyFeatureSafely(sourceFeature, targetLayer, targetDefn); err != nil {
+				fmt.Printf("要素 %d 复制失败，跳过: %v\n", totalFeatures, err)
+				errorCount++
+			} else {
+				successCount++
 			}
-		}
+		}()
+	}
 
-		// 复制字段值
-		fieldCount := int(C.OGR_F_GetFieldCount(sourceFeature))
-		for i := 0; i < fieldCount; i++ {
-			if C.OGR_F_IsFieldSet(sourceFeature, C.int(i)) != 0 {
-				// 根据字段类型复制值
-				fieldDefn := C.OGR_F_GetFieldDefnRef(sourceFeature, C.int(i))
-				fieldType := C.OGR_Fld_GetType(fieldDefn)
+	fmt.Printf("要素复制完成 - 总计: %d, 成功: %d, 错误: %d\n",
+		totalFeatures, successCount, errorCount)
 
-				switch fieldType {
-				case C.OFTInteger:
-					value := C.OGR_F_GetFieldAsInteger(sourceFeature, C.int(i))
-					C.OGR_F_SetFieldInteger(newFeature, C.int(i), value)
-				case C.OFTReal:
-					value := C.OGR_F_GetFieldAsDouble(sourceFeature, C.int(i))
-					C.OGR_F_SetFieldDouble(newFeature, C.int(i), value)
-				case C.OFTString:
-					value := C.OGR_F_GetFieldAsString(sourceFeature, C.int(i))
-					C.OGR_F_SetFieldString(newFeature, C.int(i), value)
-					// 可以添加更多字段类型的处理
+	return nil
+}
+
+// copyFeatureSafely 安全地复制单个要素
+func (w *FileGeoWriter) copyFeatureSafely(sourceFeature C.OGRFeatureH, targetLayer C.OGRLayerH, targetDefn C.OGRFeatureDefnH) error {
+	// 创建新要素
+	newFeature := C.OGR_F_Create(targetDefn)
+	if newFeature == nil {
+		return fmt.Errorf("无法创建新要素")
+	}
+
+	// 确保新要素被释放
+	defer C.OGR_F_Destroy(newFeature)
+
+	// 复制几何
+	if err := w.copyGeometrySafely(sourceFeature, newFeature); err != nil {
+		return fmt.Errorf("几何复制失败: %v", err)
+	}
+
+	// 复制字段值
+	if err := w.copyFieldsSafely(sourceFeature, newFeature); err != nil {
+		return fmt.Errorf("字段复制失败: %v", err)
+	}
+
+	// 验证要素是否有效
+	if err := w.validateFeature(newFeature); err != nil {
+		return fmt.Errorf("要素验证失败: %v", err)
+	}
+
+	// 添加要素到目标图层
+	result := C.OGR_L_CreateFeature(targetLayer, newFeature)
+	if result != C.OGRERR_NONE {
+		return fmt.Errorf("无法添加要素到目标图层，错误代码: %d", int(result))
+	}
+
+	return nil
+}
+
+// copyGeometrySafely 安全地复制几何
+func (w *FileGeoWriter) copyGeometrySafely(sourceFeature, newFeature C.OGRFeatureH) error {
+	geometry := C.OGR_F_GetGeometryRef(sourceFeature)
+	if geometry == nil {
+		// 几何为空，这是允许的
+		return nil
+	}
+
+	// 检查几何是否有效
+	if C.OGR_G_IsValid(geometry) == 0 {
+		// 尝试修复几何
+		validGeom := C.OGR_G_MakeValid(geometry)
+		if validGeom != nil {
+			defer C.OGR_G_DestroyGeometry(validGeom)
+			if C.OGR_G_IsValid(validGeom) != 0 {
+				clonedGeom := C.OGR_G_Clone(validGeom)
+				if clonedGeom != nil {
+					C.OGR_F_SetGeometry(newFeature, clonedGeom)
+					C.OGR_G_DestroyGeometry(clonedGeom)
+					return nil
 				}
 			}
 		}
+		return fmt.Errorf("几何无效且无法修复")
+	}
 
-		// 添加要素到目标图层
-		if C.OGR_L_CreateFeature(targetLayer, newFeature) != C.OGRERR_NONE {
-			C.OGR_F_Destroy(newFeature)
-			C.OGR_F_Destroy(sourceFeature)
-			return fmt.Errorf("无法添加要素到目标图层")
-		}
+	// 克隆几何
+	clonedGeom := C.OGR_G_Clone(geometry)
+	if clonedGeom == nil {
+		return fmt.Errorf("无法克隆几何")
+	}
 
-		C.OGR_F_Destroy(newFeature)
-		C.OGR_F_Destroy(sourceFeature)
+	// 设置几何
+	result := C.OGR_F_SetGeometry(newFeature, clonedGeom)
+	C.OGR_G_DestroyGeometry(clonedGeom)
+
+	if result != C.OGRERR_NONE {
+		return fmt.Errorf("设置几何失败，错误代码: %d", int(result))
 	}
 
 	return nil
@@ -833,6 +888,122 @@ func (w *FileGeoWriter) removeShapeFiles() {
 }
 
 // 便捷函数
+// copyFieldsSafely 安全地复制字段
+func (w *FileGeoWriter) copyFieldsSafely(sourceFeature, newFeature C.OGRFeatureH) error {
+	fieldCount := int(C.OGR_F_GetFieldCount(sourceFeature))
+
+	for i := 0; i < fieldCount; i++ {
+		// 检查字段是否设置
+		if C.OGR_F_IsFieldSet(sourceFeature, C.int(i)) == 0 {
+			continue
+		}
+
+		// 获取字段定义
+		fieldDefn := C.OGR_F_GetFieldDefnRef(sourceFeature, C.int(i))
+		if fieldDefn == nil {
+			continue
+		}
+
+		fieldType := C.OGR_Fld_GetType(fieldDefn)
+
+		// 根据字段类型安全地复制值
+		if err := w.copyFieldValueSafely(sourceFeature, newFeature, i, fieldType); err != nil {
+			fmt.Printf("字段 %d 复制失败，跳过: %v\n", i, err)
+			// 不返回错误，继续处理其他字段
+		}
+	}
+
+	return nil
+}
+
+// copyFieldValueSafely 安全地复制字段值
+func (w *FileGeoWriter) copyFieldValueSafely(sourceFeature, newFeature C.OGRFeatureH, fieldIndex int, fieldType C.OGRFieldType) error {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("字段 %d 值复制时发生panic: %v\n", fieldIndex, r)
+		}
+	}()
+
+	switch fieldType {
+	case C.OFTInteger:
+		value := C.OGR_F_GetFieldAsInteger(sourceFeature, C.int(fieldIndex))
+		C.OGR_F_SetFieldInteger(newFeature, C.int(fieldIndex), value)
+
+	case C.OFTInteger64:
+		value := C.OGR_F_GetFieldAsInteger64(sourceFeature, C.int(fieldIndex))
+		C.OGR_F_SetFieldInteger64(newFeature, C.int(fieldIndex), value)
+
+	case C.OFTReal:
+		value := C.OGR_F_GetFieldAsDouble(sourceFeature, C.int(fieldIndex))
+		// 检查是否为无效数值
+		if C.check_isnan(C.double(value)) != 0 || C.check_isinf(C.double(value)) != 0 {
+			return fmt.Errorf("字段包含无效数值 (NaN 或 Inf)")
+		}
+		C.OGR_F_SetFieldDouble(newFeature, C.int(fieldIndex), value)
+
+	case C.OFTString:
+		value := C.OGR_F_GetFieldAsString(sourceFeature, C.int(fieldIndex))
+		if value == nil {
+			return fmt.Errorf("字符串字段为空指针")
+		}
+		C.OGR_F_SetFieldString(newFeature, C.int(fieldIndex), value)
+
+	case C.OFTDate:
+		var year, month, day, hour, minute, second, tzflag C.int
+		result := C.OGR_F_GetFieldAsDateTime(sourceFeature, C.int(fieldIndex),
+			&year, &month, &day, &hour, &minute, &second, &tzflag)
+		if result != 0 {
+			C.OGR_F_SetFieldDateTime(newFeature, C.int(fieldIndex),
+				year, month, day, hour, minute, second, tzflag)
+		}
+
+	case C.OFTTime:
+		var year, month, day, hour, minute, second, tzflag C.int
+		result := C.OGR_F_GetFieldAsDateTime(sourceFeature, C.int(fieldIndex),
+			&year, &month, &day, &hour, &minute, &second, &tzflag)
+		if result != 0 {
+			C.OGR_F_SetFieldDateTime(newFeature, C.int(fieldIndex),
+				year, month, day, hour, minute, second, tzflag)
+		}
+
+	case C.OFTDateTime:
+		var year, month, day, hour, minute, second, tzflag C.int
+		result := C.OGR_F_GetFieldAsDateTime(sourceFeature, C.int(fieldIndex),
+			&year, &month, &day, &hour, &minute, &second, &tzflag)
+		if result != 0 {
+			C.OGR_F_SetFieldDateTime(newFeature, C.int(fieldIndex),
+				year, month, day, hour, minute, second, tzflag)
+		}
+
+	default:
+		// 对于不支持的字段类型，尝试作为字符串处理
+		value := C.OGR_F_GetFieldAsString(sourceFeature, C.int(fieldIndex))
+		if value != nil {
+			C.OGR_F_SetFieldString(newFeature, C.int(fieldIndex), value)
+		}
+	}
+
+	return nil
+}
+
+// validateFeature 验证要素是否有效
+func (w *FileGeoWriter) validateFeature(feature C.OGRFeatureH) error {
+	// 检查几何是否有效（如果存在）
+	geometry := C.OGR_F_GetGeometryRef(feature)
+	if geometry != nil {
+		if C.OGR_G_IsValid(geometry) == 0 {
+			return fmt.Errorf("要素几何无效")
+		}
+
+		// 检查几何是否为空
+		if C.OGR_G_IsEmpty(geometry) != 0 {
+			// 空几何在某些情况下是允许的，这里可以根据需要调整
+			fmt.Printf("警告: 要素包含空几何\n")
+		}
+	}
+
+	return nil
+}
 
 // WriteShapeFileLayer 直接写入Shapefile图层
 func WriteShapeFileLayer(sourceLayer *GDALLayer, filePath string, layerName string, overwrite bool) error {

@@ -53,7 +53,13 @@ int addFieldToLayer(OGRLayerH layer, const char* fieldName, OGRFieldType fieldTy
 
     return (err == OGRERR_NONE) ? 1 : 0;
 }
-
+inline int check_isnan(double x) {
+    return x != x;
+}
+// 检查是否为无穷大
+inline int check_isinf(double x) {
+    return !isfinite(x) && !check_isnan(x);
+}
 
 // 复制字段值
 void copyFieldValue(OGRFeatureH srcFeature, OGRFeatureH dstFeature, int srcFieldIndex, int dstFieldIndex) {

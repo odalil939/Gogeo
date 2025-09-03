@@ -27,7 +27,7 @@ package Gogeo
 #include "osgeo_utils.h"
 
 // 初始化GDAL并修复PROJ配置问题
-void initializeGDALWithProjFix(const char* projDataPath, const char* shapeEncoding) {
+void initializeGDALWithProjFix(const char* projDataPath) {
     // 动态设置PROJ数据路径，支持自定义路径
     if (projDataPath && strlen(projDataPath) > 0) {
         CPLSetConfigOption("PROJ_DATA", projDataPath);      // 设置PROJ数据目录
@@ -38,10 +38,6 @@ void initializeGDALWithProjFix(const char* projDataPath, const char* shapeEncodi
     CPLSetConfigOption("OSR_DEFAULT_AXIS_MAPPING_STRATEGY", "TRADITIONAL_GIS_ORDER");
 
 
-    // 动态设置Shapefile编码，支持不同字符集
-    if (shapeEncoding && strlen(shapeEncoding) > 0) {
-        CPLSetConfigOption("SHAPE_ENCODING", shapeEncoding); // 设置Shapefile文件编码
-    }
 
     // 注册所有GDAL驱动程序，启用栅格数据支持
     GDALAllRegister();
@@ -246,19 +242,14 @@ func InitializeGDAL() error {
 		}
 	}
 
-	// 如果未指定编码，使用默认编码
-	shapeEncoding := "GBK"
-
 	// 转换Go字符串为C字符串
 	cProjPath := C.CString(projDataPath)
-	cEncoding := C.CString(shapeEncoding)
 
 	// 确保C字符串资源被释放
 	defer C.free(unsafe.Pointer(cProjPath))
-	defer C.free(unsafe.Pointer(cEncoding))
 
 	// 调用C函数初始化GDAL
-	C.initializeGDALWithProjFix(cProjPath, cEncoding)
+	C.initializeGDALWithProjFix(cProjPath)
 
 	return nil // 初始化成功
 }

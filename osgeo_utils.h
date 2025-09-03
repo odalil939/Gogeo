@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // osgeo_utils.h
 #ifndef OSGEO_UTILS_H
 #define OSGEO_UTILS_H
-
+#include <math.h>
 #include <gdal.h>
 #include <gdal_alg.h>
 #include <ogr_api.h>
@@ -34,8 +34,11 @@ extern "C" {
 // 声明外部函数，避免重复定义
 extern int handleProgressUpdate(double, char*, void*);
 
-// 函数声明
+
+
 OGRLayerH createMemoryLayer(const char* layerName, OGRwkbGeometryType geomType, OGRSpatialReferenceH srs);
+int check_isnan(double x);
+int check_isinf(double x);
 int addFieldToLayer(OGRLayerH layer, const char* fieldName, OGRFieldType fieldType);
 void copyFieldValue(OGRFeatureH srcFeature, OGRFeatureH dstFeature, int srcFieldIndex, int dstFieldIndex);
 int progressCallback(double dfComplete, const char *pszMessage, void *pProgressArg);
